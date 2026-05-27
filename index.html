@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mon Tracker Achats & Ventes</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    :root {
+      --peach: #F5C4A8;
+      --peach-mid: #EFA882;
+      --peach-dark: #C4744A;
+      --peach-light: #FDF0E8;
+      --almond: #A8C4A2;
+      --almond-mid: #7DAF75;
+      --almond-dark: #4A7A44;
+      --almond-light: #EAF3E9;
+      --lavender: #C4B8E0;
+      --lavender-light: #F0EDF9;
+      --sage: #B8CFC4;
+      --sage-light: #EBF3F0;
+      --sand: #E8DFD0;
+      --sand-dark: #9C8E7A;
+      --text: #3A3530;
+      --text-mid: #7A6E66;
+      --text-light: #AFA89F;
+      --border: #EDE8E2;
+      --bg: #FAF8F5;
+      --surface: #FFFFFF;
+      --radius: 14px;
+      --radius-sm: 9px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    .app { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+    /* Header */
+    header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.75rem; }
+    .logo { width: 40px; height: 40px; background: linear-gradient(135deg, var(--peach-mid), var(--almond-mid)); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .logo svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    header h1 { font-size: 19px; font-weight: 600; color: var(--text); }
+    header p { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+
+    /* Tabs */
+    .tabs { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px; gap: 4px; margin-bottom: 1.5rem; width: fit-content; }
+    .tab { padding: 7px 20px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; background: transparent; color: var(--text-light); border-radius: var(--radius-sm); transition: all .15s; }
+    .tab.active { background: var(--text); color: #fff; }
+    .tab:hover:not(.active) { background: var(--bg); color: var(--text); }
+
+    /* Filtre période — EN HAUT */
+    .period-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .85rem 1.1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .period-bar-label { font-size: 11px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: .05em; flex-shrink: 0; }
+    .period-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+    .period-btn { padding: 5px 14px; font-size: 12px; font-weight: 500; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text-mid); cursor: pointer; transition: all .15s; font-family: 'DM Sans', sans-serif; }
+    .period-btn.active { background: var(--text); color: #fff; border-color: var(--text); }
+    .period-btn:hover:not(.active) { border-color: var(--sand-dark); }
+
+    /* Filtre plateforme */
+    .filter-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .filter-label { font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing: .04em; font-weight: 500; }
+    select.filter { font-size: 12px; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+    /* Première transaction */
+    .first-tx { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-mid); background: var(--lavender-light); border: 1px solid var(--lavender); border-radius: 20px; padding: 4px 12px; margin-bottom: 1.25rem; }
+    .first-tx span { font-weight: 600; color: var(--text); }
+
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; }
+    .stat-label { font-size: 11px; color: var(--text-light); text-transform: uppercase; letter-spacing: .04em; font-weight: 500; margin-bottom: 6px; }
+    .stat-value { font-size: 17px; font-weight: 600; color: var(--text); font-family: 'DM Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stat-value.pos { color: var(--almond-dark); }
+    .stat-value.neg { color: var(--peach-dark); }
+    .stat-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; font-size: 14px; }
+    .si-peach { background: var(--peach-light); }
+    .si-almond { background: var(--almond-light); }
+    .si-lav { background: var(--lavender-light); }
+    .si-sage { background: var(--sage-light); }
+
+    /* Chart */
+    .chart-box { background: var(--surface); border: 1px solid var(--border); padding: 1.25rem; border-radius: var(--radius); }
+    .chart-title { font-size: 11px; font-weight: 600; color: var(--text-mid); margin-bottom: 14px; text-transform: uppercase; letter-spacing: .05em; }
+    .chart-wrap { position: relative; height: 240px; }
+    .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-light); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+    .legend-hatch { width: 10px; height: 10px; border-radius: 3px; border: 1px solid #3D6B38; background: repeating-linear-gradient(-45deg, #3D6B38, #3D6B38 1.5px, transparent 1.5px, transparent 5px); }
+
+    /* Formulaire */
+    .form-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.25rem; }
+    .section-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+    .badge { font-size: 10px; padding: 2px 8px; border-radius: 20px; background: var(--almond-light); color: var(--almond-dark); font-weight: 600; }
+    .import-zone { border: 1.5px dashed var(--border); border-radius: var(--radius-sm); padding: 1.5rem; text-align: center; background: var(--bg); margin-bottom: 8px; }
+    .import-zone p { font-size: 13px; color: var(--text-mid); margin-bottom: 10px; }
+    .import-note { font-size: 11px; color: var(--text-light); margin-top: 8px; }
+    .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group label { font-size: 11px; font-weight: 600; color: var(--text-mid); text-transform: uppercase; letter-spacing: .04em; }
+    input[type=text], input[type=number], input[type=date], select, input[type=file] {
+      font-size: 13px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--surface); color: var(--text); width: 100%; font-family: 'DM Sans', sans-serif;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--almond-mid); box-shadow: 0 0 0 3px var(--almond-light); }
+    .btn { padding: 9px 20px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-family: 'DM Sans', sans-serif; transition: all .15s; }
+    .btn.primary { background: var(--text); color: #fff; border-color: transparent; }
+    .btn.primary:hover { opacity: .88; }
+    .msg { font-size: 12px; color: var(--almond-dark); margin-top: 8px; min-height: 18px; font-weight: 500; }
+
+    /* Historique */
+    .list-controls { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+    .list-count { font-size: 12px; color: var(--text-light); margin-left: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; background: var(--surface); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+    th { text-align: left; font-size: 10px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: .05em; padding: 10px 12px; background: var(--bg); border-bottom: 1px solid var(--border); position: relative; overflow: hidden; }
+    .col-resizer { position: absolute; right: 0; top: 0; height: 100%; width: 5px; cursor: col-resize; user-select: none; }
+    .col-resizer:hover, .col-resizer.resizing { background: var(--almond-mid); opacity: .5; }
+    td { padding: 9px 12px; border-bottom: 1px solid #F5F2EE; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--bg); }
+    .pill { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+    .pill-v { background: var(--almond-light); color: var(--almond-dark); }
+    .pill-a { background: var(--peach-light); color: var(--peach-dark); }
+    .del { background: none; border: none; color: var(--border); cursor: pointer; font-size: 13px; transition: color .15s; }
+    .del:hover { color: var(--peach-dark); }
+    .empty { text-align: center; padding: 3rem; color: var(--text-light); font-size: 13px; }
+    .pager { display: flex; align-items: center; gap: 10px; margin-top: 14px; font-size: 12px; color: var(--text-light); justify-content: center; }
+
+    @media (max-width: 520px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
+    .edit-btn { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 14px; transition: color .15s; margin-right: 4px; }
+    .edit-btn:hover { color: var(--almond-dark); }
+    .ac-wrap { position: relative; }
+    .ac-drop { display:none; position:absolute; top:100%; left:0; right:0; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); z-index:50; max-height:180px; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,.1); }
+    .ac-item { padding:8px 10px; font-size:13px; cursor:pointer; color:var(--text); }
+    .ac-item:hover { background:var(--bg); }
+    .ac-create { color:var(--almond-dark); font-weight:600; border-top:1px solid var(--border); }
+
+    /* Associer */
+    .link-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; margin-bottom: 10px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .link-side { flex: 1; min-width: 140px; }
+    .link-side-label { font-size: 10px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 3px; }
+    .link-nom { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+    .link-meta { font-size: 11px; color: var(--text-mid); font-family: 'DM Mono', monospace; }
+    .link-arrow { font-size: 20px; color: var(--text-light); flex-shrink: 0; }
+    .link-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+    .conf-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; margin-bottom: 5px; }
+    .conf-haute { background: var(--almond-light); color: var(--almond-dark); }
+    .conf-partielle { background: var(--lavender-light); color: #6B5FA6; }
+    .conf-none { background: var(--sand); color: var(--sand-dark); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <div>
+      <h1>Mon tracker achats & ventes</h1>
+      <p>Vinted · Le Bon Coin · Boutiques</p>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="nav('dash')">Synthèse</button>
+    <button class="tab" onclick="nav('add')">Ajouter</button>
+    <button class="tab" onclick="nav('list')">Historique</button>
+    <button class="tab" onclick="nav('link')">Associer</button>
+  </div>
+
+  <!-- RÉSUMÉ -->
+  <div id="v-dash">
+
+    <!-- Filtre période EN HAUT -->
+    <div class="period-bar">
+      <span class="period-bar-label">Période</span>
+      <div class="period-pills">
+        <button class="period-btn" data-p="all" onclick="setPeriod(this)">Depuis le début</button>
+        <button class="period-btn" data-p="year" onclick="setPeriod(this)">Depuis le début de l'année</button>
+        <button class="period-btn" data-p="last3m" onclick="setPeriod(this)">3 derniers mois</button>
+        <button class="period-btn active" data-p="curmonth" onclick="setPeriod(this)">Mois en cours</button>
+      </div>
+    </div>
+
+    <!-- Première transaction -->
+    <div id="first-tx-box" class="first-tx" style="display:none">
+      🗓 Depuis le <span id="first-tx-date">—</span>
+    </div>
+
+    <!-- Filtres -->
+    <div class="filter-bar">
+      <span class="filter-label">Boutique</span>
+      <select class="filter" id="f-plat" onchange="refreshDash()"><option value="">Toutes</option></select>
+      <span class="filter-label" style="margin-left:8px">Catégorie</span>
+      <select class="filter" id="f-cat-dash" onchange="refreshDash()">
+        <option value="">Toutes</option>
+        <option value="Mode">Mode</option>
+        <option value="Maison">Maison</option>
+        <option value="Loisirs">Loisirs</option>
+        <option value="High-tech">High-tech</option>
+        <option value="Autre">Autre</option>
+      </select>
+    </div>
+
+    <!-- Label période active -->
+    <div id="period-label" style="display:none;font-size:14px;font-weight:600;color:var(--text-mid);margin-bottom:1rem"></div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-icon si-almond">🛍</div>
+        <div class="stat-label">Ventes</div>
+        <div class="stat-value" id="s-nv">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-icon si-peach">🛒</div>
+        <div class="stat-label">Achats</div>
+        <div class="stat-value" id="s-na">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-icon si-almond">💰</div>
+        <div class="stat-label">Revenus</div>
+        <div class="stat-value pos" id="s-rev">0,00 €</div>
+      </div>
+      <div class="stat">
+        <div class="stat-icon si-peach">💸</div>
+        <div class="stat-label">Dépenses</div>
+        <div class="stat-value neg" id="s-dep">0,00 €</div>
+      </div>
+      <div class="stat">
+        <div class="stat-icon si-lav">📊</div>
+        <div class="stat-label">Bénéfice net</div>
+        <div class="stat-value" id="s-ben">0,00 €</div>
+      </div>
+    </div>
+
+    <!-- Graphique symétrique -->
+    <div class="chart-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div class="chart-title" style="margin-bottom:0">Ventes & achats</div>
+        <div class="period-pills" style="gap:4px">
+          <button class="period-btn gran-btn active" data-g="month" onclick="setChartGranularity(this)">Mensuel</button>
+          <button class="period-btn gran-btn" data-g="week" onclick="setChartGranularity(this)">Hebdomadaire</button>
+          <button class="period-btn gran-btn" id="gran-year-btn" data-g="year" onclick="setChartGranularity(this)" style="display:none">Annuel</button>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="cMois" role="img" aria-label="Ventes et achats"></canvas></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--almond-mid)"></div>Ventes</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--peach-mid)"></div>Achats</div>
+          <div class="legend-item"><div class="legend-hatch"></div>Bénéfice</div>
+        </div>
+        <div id="chart-avg-ben" style="font-size:12px;font-weight:600"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AJOUTER -->
+  <div id="v-add" style="display:none">
+    <div class="form-section">
+      <div class="section-title">Importer un CSV <span class="badge">Format auto-détecté</span></div>
+      <div class="import-zone">
+        <p>Sélectionne ton fichier CSV pour importer ton historique</p>
+        <input type="file" id="csv-file" accept=".csv" onchange="importCSV()" style="width:auto" />
+        <div class="import-note">Format attendu : Article ; VENTE/ACHAT ; Date ; Prix ; BOUTIQUE ; Type ; Catégorie</div>
+      </div>
+      <div class="msg" id="msg-import"></div>
+    </div>
+
+    <div class="form-section">
+      <div class="section-title">Ajouter un article manuellement</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Type</label>
+          <select id="f-type" onchange="updatePriceLabel()">
+            <option value="vente">Vente</option>
+            <option value="achat">Achat</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Article</label>
+          <input type="text" id="f-nom" placeholder="ex : Veste Zara" />
+        </div>
+        <div class="form-group">
+          <label>Boutique</label>
+          <div class="ac-wrap">
+            <input type="text" id="f-plat2" placeholder="Vinted" autocomplete="off" oninput="acFilter()" onfocus="acFilter()" onblur="setTimeout(acHide,200)" />
+            <div id="ac-drop" class="ac-drop"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Catégorie</label>
+          <select id="f-cat">
+            <option>Mode</option><option>Maison</option><option>Loisirs</option><option>High-tech</option><option>Autre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label id="f-prix-label">Prix de vente (€)</label>
+          <input type="number" id="f-prix" placeholder="0" min="0" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="f-date" />
+        </div>
+      </div>
+      <div class="form-group" id="fg-linked" style="margin-bottom:14px">
+        <label>Lié à un achat <span style="font-weight:400;text-transform:none;color:var(--text-light)">(optionnel)</span></label>
+        <div class="ac-wrap">
+          <input type="text" id="f-linked-nom" placeholder="Cherche un achat par nom..." autocomplete="off" oninput="acAchatFilter()" onfocus="acAchatFilter()" onblur="setTimeout(acAchatHide,200)" />
+          <div id="ac-achat-drop" class="ac-drop"></div>
+        </div>
+        <div id="f-linked-info" style="font-size:11px;color:var(--text-mid);margin-top:4px;min-height:16px"></div>
+      </div>
+      <button class="btn primary" onclick="ajouter()">Ajouter l'article</button>
+      <div class="msg" id="msg"></div>
+    </div>
+  </div>
+
+  <!-- HISTORIQUE -->
+  <div id="v-list" style="display:none">
+    <div class="list-controls">
+      <input type="text" id="lf-search" placeholder="Rechercher un article..." autocomplete="off"
+        oninput="currentPage=1;renderList()"
+        style="font-size:13px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-family:'DM Sans',sans-serif;min-width:200px" />
+      <select class="filter" id="lf-type" onchange="renderList()">
+        <option value="">Tous types</option>
+        <option value="vente">Ventes</option>
+        <option value="achat">Achats</option>
+      </select>
+      <select class="filter" id="lf-plat" onchange="renderList()"><option value="">Toutes plateformes</option></select>
+      <select class="filter" id="lf-cat" onchange="renderList()">
+        <option value="">Toutes catégories</option>
+        <option value="Mode">Mode</option>
+        <option value="Maison">Maison</option>
+        <option value="Loisirs">Loisirs</option>
+        <option value="High-tech">High-tech</option>
+        <option value="Autre">Autre</option>
+      </select>
+      <span class="list-count" id="list-count"></span>
+    </div>
+    <div class="period-bar" style="margin-bottom:1rem">
+      <span class="period-bar-label">Période</span>
+      <div class="period-pills" id="list-period-pills">
+        <button class="period-btn active" data-p="all" onclick="setListPeriod(this)">Depuis le début</button>
+        <button class="period-btn" data-p="year" onclick="setListPeriod(this)">Cette année</button>
+        <button class="period-btn" data-p="last3m" onclick="setListPeriod(this)">3 derniers mois</button>
+        <button class="period-btn" data-p="last30" onclick="setListPeriod(this)">30 derniers jours</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th style="width:9%">Type<span class="col-resizer"></span></th>
+        <th style="width:19%">Article<span class="col-resizer"></span></th>
+        <th style="width:12%">Boutique<span class="col-resizer"></span></th>
+        <th style="width:9%">Catégorie<span class="col-resizer"></span></th>
+        <th style="width:9%">Date<span class="col-resizer"></span></th>
+        <th style="width:10%">Prix<span class="col-resizer"></span></th>
+        <th style="width:10%">Bénéfice<span class="col-resizer"></span></th>
+        <th style="width:10%">Marge<span class="col-resizer"></span></th>
+        <th style="width:7%"></th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    </div>
+    <div class="pager">
+      <button class="btn" style="padding:5px 12px;font-size:12px" onclick="changePage(-1)">←</button>
+      <span id="pager-info"></span>
+      <button class="btn" style="padding:5px 12px;font-size:12px" onclick="changePage(1)">→</button>
+    </div>
+  </div>
+</div>
+
+  <!-- ASSOCIER -->
+  <div id="v-link" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
+      <select class="filter" id="lf-link-filter" onchange="renderLink()">
+        <option value="all">Toutes les paires</option>
+        <option value="haute">Haute confiance</option>
+        <option value="partielle">Correspondance partielle</option>
+        <option value="none">Sans correspondance</option>
+      </select>
+      <span id="link-counts" style="font-size:12px;color:var(--text-light)"></span>
+    </div>
+    <div id="link-cards"></div>
+  </div>
+</div>
+
+<!-- Modal édition -->
+<div id="modal-overlay" onclick="if(event.target===this)closeModal()" style="display:none;position:fixed;inset:0;background:rgba(58,53,48,.45);z-index:200;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:var(--surface);border-radius:var(--radius);padding:1.5rem;width:min(460px,100%);max-height:90vh;overflow-y:auto;border:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <div class="section-title" style="margin:0">Modifier l'article</div>
+      <button class="del" onclick="closeModal()" style="font-size:16px">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Type</label>
+        <select id="e-type" onchange="updateEditPriceLabel()"><option value="vente">Vente</option><option value="achat">Achat</option></select>
+      </div>
+      <div class="form-group">
+        <label>Article</label>
+        <input type="text" id="e-nom" placeholder="ex : Veste Zara" />
+      </div>
+      <div class="form-group">
+        <label>Boutique</label>
+        <input type="text" id="e-plat" placeholder="ex : Vinted" />
+      </div>
+      <div class="form-group">
+        <label>Catégorie</label>
+        <select id="e-cat"><option>Mode</option><option>Maison</option><option>Loisirs</option><option>High-tech</option><option>Autre</option></select>
+      </div>
+      <div class="form-group">
+        <label id="e-prix-label">Prix de vente (€)</label>
+        <input type="number" id="e-prix" placeholder="0" min="0" step="0.01" />
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="e-date" />
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn primary" onclick="saveEdit()">Sauvegarder</button>
+      <button class="btn" onclick="closeModal()">Annuler</button>
+    </div>
+    <div class="msg" id="msg-edit"></div>
+  </div>
+</div>
+
+<script>
+  const SB_URL = 'https://rqwhpwkmbrkalcxddian.supabase.co/rest/v1';
+  const SB_KEY = 'sb_publishable_HqQrbGgeyWmKWQ_tNJDGLg_I4JNJkCA';
+  const SB_H = { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' };
+
+  let data = [];
+  let cM;
+  let currentPage = 1;
+  const PAGE_SIZE = 20;
+  let activePeriod = 'curmonth';
+  let chartGranularity = 'month';
+  let listPeriod = 'all';
+  let editId = null;
+  let linkedId = null;
+  let skipSet = new Set(JSON.parse(localStorage.getItem('skip_associations') || '[]'));
+
+  async function sbLoad() {
+    try {
+      const r = await fetch(SB_URL + '/transactions?select=*', { headers: SB_H });
+      if (r.ok) data = await r.json();
+    } catch(e) {}
+    populateFilters(); refreshDash();
+  }
+
+  async function sbAdd(item) {
+    try { await fetch(SB_URL + '/transactions', { method: 'POST', headers: SB_H, body: JSON.stringify(item) }); } catch(e) {}
+  }
+
+  async function sbAddBatch(items) {
+    if (!items.length) return;
+    try { await fetch(SB_URL + '/transactions', { method: 'POST', headers: SB_H, body: JSON.stringify(items) }); } catch(e) {}
+  }
+
+  async function sbPatch(id, item) {
+    try { await fetch(SB_URL + '/transactions?id=eq.' + id, { method: 'PATCH', headers: SB_H, body: JSON.stringify(item) }); } catch(e) {}
+  }
+
+  async function sbDelete(id) {
+    try { await fetch(SB_URL + '/transactions?id=eq.' + id, { method: 'DELETE', headers: SB_H }); } catch(e) {}
+  }
+
+  const MOIS_LABELS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+  function normPlat(p) {
+    if (!p) return 'Autre';
+    const u = p.trim().toUpperCase();
+    if (u === 'VNTED' || u === 'VINTED') return 'Vinted';
+    if (u === 'LE BON COIN' || u === 'LEBONCOIN') return 'Le Bon Coin';
+    return p.trim();
+  }
+
+  function fmt(n) { return Math.abs(n).toFixed(2).replace('.', ',') + ' €'; }
+
+  /* ---- Filtre période ---- */
+  function getPeriodFilter() {
+    const now = new Date();
+    if (activePeriod === 'all') return () => true;
+    if (activePeriod === 'year') {
+      const y = now.getFullYear();
+      return a => a.date && a.date.startsWith(String(y));
+    }
+    if (activePeriod === 'last3m') {
+      const d = new Date(now); d.setMonth(d.getMonth() - 3);
+      return a => a.date && new Date(a.date) >= d;
+    }
+    if (activePeriod === 'curmonth') {
+      const ym = now.toISOString().slice(0, 7);
+      return a => a.date && a.date.startsWith(ym);
+    }
+    return () => true;
+  }
+
+  function setListPeriod(btn) {
+    document.querySelectorAll('#list-period-pills .period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    listPeriod = btn.dataset.p;
+    currentPage = 1;
+    renderList();
+  }
+
+  function getListPeriodFilter() {
+    const now = new Date();
+    if (listPeriod === 'all') return () => true;
+    if (listPeriod === 'year') { const y = now.getFullYear(); return a => a.date && a.date.startsWith(String(y)); }
+    if (listPeriod === 'last3m') { const d = new Date(now); d.setMonth(d.getMonth()-3); return a => a.date && new Date(a.date) >= d; }
+    if (listPeriod === 'last30') { const d = new Date(now); d.setDate(d.getDate()-30); return a => a.date && new Date(a.date) >= d; }
+    if (/^\d{4}$/.test(listPeriod)) return a => a.date && a.date.startsWith(listPeriod);
+    return () => true;
+  }
+
+  /* ---- Colonnes redimensionnables ---- */
+  function initResizableCols() {
+    document.querySelectorAll('th .col-resizer').forEach(r => {
+      const th = r.parentElement;
+      let startX, startW;
+      r.addEventListener('mousedown', e => {
+        startX = e.clientX; startW = th.offsetWidth;
+        r.classList.add('resizing');
+        e.preventDefault();
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+      function onMove(e) { th.style.width = Math.max(40, startW + e.clientX - startX) + 'px'; }
+      function onUp() { r.classList.remove('resizing'); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
+    });
+  }
+
+  function updateGranVisibility() {
+    const yearBtn = document.getElementById('gran-year-btn');
+    if (activePeriod !== 'all') {
+      yearBtn.style.display = 'none';
+      if (chartGranularity === 'year') {
+        chartGranularity = 'month';
+        document.querySelectorAll('.gran-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.gran-btn[data-g="month"]').classList.add('active');
+      }
+    } else {
+      yearBtn.style.display = '';
+    }
+  }
+
+  function setPeriod(btn) {
+    document.querySelectorAll('#v-dash .period-pills:first-of-type .period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activePeriod = btn.dataset.p;
+    updateGranVisibility();
+    refreshDash();
+  }
+
+  function setChartGranularity(btn) {
+    document.querySelectorAll('.gran-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    chartGranularity = btn.dataset.g;
+    refreshDash();
+  }
+
+  /* ---- Première transaction Vinted ---- */
+  function updateFirstTx() {
+    const sorted = data.filter(a => a.date).sort((a,b) => a.date.localeCompare(b.date));
+    const box = document.getElementById('first-tx-box');
+    if (sorted.length && activePeriod === 'all') {
+      document.getElementById('first-tx-date').textContent = sorted[0].date.split('-').reverse().join('/');
+      box.style.display = 'inline-flex';
+    } else {
+      box.style.display = 'none';
+    }
+  }
+
+  function getPeriodLabel() {
+    const now = new Date();
+    const MOIS = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+    const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+    if (activePeriod === 'all') return '';
+    if (activePeriod === 'year') return `Année ${now.getFullYear()}`;
+    if (activePeriod === 'last3m') {
+      const start = new Date(now); start.setMonth(start.getMonth() - 3);
+      return `${cap(MOIS[start.getMonth()])} - ${cap(MOIS[now.getMonth()])} ${now.getFullYear()}`;
+    }
+    if (activePeriod === 'curmonth') return `${cap(MOIS[now.getMonth()])} ${now.getFullYear()}`;
+    return '';
+  }
+
+  /* ---- Populate selects ---- */
+  function populateFilters() {
+    const plats = [...new Set(data.map(a => a.plat))].sort();
+    const years = [...new Set(data.map(a => a.date ? a.date.slice(0,4) : ''))].filter(Boolean).sort().reverse();
+
+    ['f-plat','lf-plat'].forEach(id => {
+      const el = document.getElementById(id); const cur = el.value;
+      el.innerHTML = id === 'f-plat' ? '<option value="">Toutes</option>' : '<option value="">Toutes plateformes</option>';
+      plats.forEach(p => { const o = document.createElement('option'); o.value = p; o.textContent = p; el.appendChild(o); });
+      el.value = cur;
+    });
+
+    const pills = document.getElementById('list-period-pills');
+    pills.querySelectorAll('[data-year]').forEach(b => b.remove());
+    years.forEach(y => {
+      const btn = document.createElement('button');
+      btn.className = 'period-btn' + (listPeriod === y ? ' active' : '');
+      btn.dataset.p = y; btn.dataset.year = '1';
+      btn.textContent = y;
+      btn.onclick = () => setListPeriod(btn);
+      pills.appendChild(btn);
+    });
+
+    updateFirstTx();
+  }
+
+  /* ---- Résumé ---- */
+  function refreshDash() {
+    const platSel = document.getElementById('f-plat').value;
+    const catSel = document.getElementById('f-cat-dash').value;
+    const pf = getPeriodFilter();
+    const fd = data.filter(a => (!platSel || a.plat === platSel) && (!catSel || a.cat === catSel) && pf(a));
+    const ventes = fd.filter(a => a.type === 'vente');
+    const achats = fd.filter(a => a.type === 'achat');
+    const rev = ventes.reduce((s,a) => s + a.pv, 0);
+    const dep = achats.reduce((s,a) => s + a.pa, 0);
+    const ben = rev - dep;
+    document.getElementById('s-nv').textContent = ventes.length;
+    document.getElementById('s-na').textContent = achats.length;
+    document.getElementById('s-rev').textContent = fmt(rev);
+    document.getElementById('s-dep').textContent = fmt(dep);
+    const el = document.getElementById('s-ben');
+    el.textContent = (ben >= 0 ? '+' : '-') + fmt(ben);
+    el.className = 'stat-value ' + (ben >= 0 ? 'pos' : 'neg');
+    refreshChart(fd);
+    updateFirstTx();
+    const label = getPeriodLabel();
+    const labelEl = document.getElementById('period-label');
+    labelEl.textContent = label;
+    labelEl.style.display = label ? '' : 'none';
+  }
+
+  /* ---- Graphique symétrique ---- */
+  function refreshChart(fd) {
+    let labels, mv, ma;
+
+    function getMondayKey(dateStr) {
+      const d = new Date(dateStr);
+      const day = d.getDay();
+      d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+      return d.toISOString().slice(0, 10);
+    }
+
+    if (chartGranularity === 'week') {
+      const weekMap = {};
+      fd.forEach(a => {
+        if (!a.date) return;
+        const key = getMondayKey(a.date);
+        if (!weekMap[key]) weekMap[key] = {v:0, a:0};
+        if (a.type === 'vente') weekMap[key].v += a.pv;
+        else weekMap[key].a += a.pa;
+      });
+      const keys = Object.keys(weekMap).sort().slice(-30);
+      labels = keys.map(k => { const [,m,d] = k.split('-'); return d+'/'+m; });
+      mv = keys.map(k => weekMap[k].v);
+      ma = keys.map(k => weekMap[k].a);
+
+    } else if (chartGranularity === 'year') {
+      const yearMap = {};
+      fd.forEach(a => {
+        if (!a.date) return;
+        const key = a.date.slice(0, 4);
+        if (!yearMap[key]) yearMap[key] = {v:0, a:0};
+        if (a.type === 'vente') yearMap[key].v += a.pv;
+        else yearMap[key].a += a.pa;
+      });
+      const keys = Object.keys(yearMap).sort();
+      labels = keys;
+      mv = keys.map(k => yearMap[k].v);
+      ma = keys.map(k => yearMap[k].a);
+
+    } else {
+      // Mensuel (défaut)
+      if (activePeriod === 'year') {
+        labels = MOIS_LABELS;
+        mv = Array(12).fill(0); ma = Array(12).fill(0);
+        fd.forEach(a => {
+          if (!a.date) return;
+          const m = parseInt(a.date.slice(5,7)) - 1;
+          if (a.type === 'vente') mv[m] += a.pv;
+          else ma[m] += a.pa;
+        });
+      } else {
+        const monthMap = {};
+        fd.forEach(a => {
+          if (!a.date) return;
+          const key = a.date.slice(0,7);
+          if (!monthMap[key]) monthMap[key] = {v:0, a:0};
+          if (a.type === 'vente') monthMap[key].v += a.pv;
+          else monthMap[key].a += a.pa;
+        });
+        const keys = Object.keys(monthMap).sort().slice(-18);
+        labels = keys.map(k => {
+          const [y,m] = k.split('-');
+          return MOIS_LABELS[parseInt(m)-1] + ' ' + y.slice(2);
+        });
+        mv = keys.map(k => monthMap[k].v);
+        ma = keys.map(k => monthMap[k].a);
+      }
+    }
+
+    // Les achats en négatif pour l'effet symétrique
+    const maNeg = ma.map(v => -v);
+    const mg = mv.map((v, i) => v - ma[i]);
+    const maxBT = labels.length > 15 ? 14 : labels.length > 8 ? 22 : 36;
+
+    // Bénéfice moyen (sur les périodes avec au moins une transaction)
+    const periodesActives = mg.filter((_, i) => mv[i] > 0 || ma[i] > 0);
+    const avgBen = periodesActives.length > 0
+      ? periodesActives.reduce((s, v) => s + v, 0) / periodesActives.length
+      : null;
+    const avgEl = document.getElementById('chart-avg-ben');
+    if (avgEl) {
+      if (avgBen !== null) {
+        const label = chartGranularity === 'year' ? 'an' : chartGranularity === 'week' ? 'semaine' : 'mois';
+        const sign = avgBen >= 0 ? '+' : '';
+        avgEl.textContent = `Bénéf. moy. : ${sign}${avgBen.toFixed(2).replace('.', ',')} € / ${label}`;
+        avgEl.style.color = avgBen >= 0 ? '#3D6B38' : '#B85A35';
+      } else {
+        avgEl.textContent = '';
+      }
+    }
+
+    // Plugin : rectangle hachuré pour le gain net
+    const gainPlugin = {
+      id: 'gainOverlay',
+      afterDatasetsDraw(chart) {
+        const { ctx, scales } = chart;
+        const yScale = scales.y;
+        mg.forEach((gain, i) => {
+          if (Math.abs(gain) < 0.01) return;
+          const meta = chart.getDatasetMeta(gain > 0 ? 0 : 1);
+          if (!meta.data[i]) return;
+          const bar = meta.data[i];
+          const bw = bar.width;
+          const x = bar.x - bw / 2;
+          const y0 = yScale.getPixelForValue(0);
+          const yG = yScale.getPixelForValue(gain);
+          const rectY = gain > 0 ? yG : y0;
+          const rectH = Math.abs(yG - y0);
+          // Hachures
+          const pat = document.createElement('canvas');
+          pat.width = 8; pat.height = 8;
+          const p = pat.getContext('2d');
+          p.strokeStyle = gain > 0 ? '#3D6B38' : '#B85A35';
+          p.lineWidth = 1.5;
+          p.beginPath(); p.moveTo(0, 8); p.lineTo(8, 0); p.stroke();
+          ctx.save();
+          ctx.fillStyle = ctx.createPattern(pat, 'repeat');
+          ctx.fillRect(x, rectY, bw, rectH);
+          ctx.strokeStyle = gain > 0 ? '#3D6B38' : '#B85A35';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(x, rectY, bw, rectH);
+          ctx.restore();
+        });
+      }
+    };
+
+    if (cM) cM.destroy();
+    cM = new Chart(document.getElementById('cMois'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Ventes',
+            data: mv,
+            backgroundColor: '#A8C4A2',
+            borderRadius: 4,
+            borderSkipped: 'bottom',
+            maxBarThickness: maxBT
+          },
+          {
+            label: 'Achats',
+            data: maNeg,
+            backgroundColor: '#F5C4A8',
+            borderRadius: 4,
+            borderSkipped: 'top',
+            maxBarThickness: maxBT
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        grouped: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const val = Math.abs(ctx.parsed.y).toFixed(2).replace('.', ',');
+                return (ctx.dataset.label === 'Ventes' ? '↑ Ventes : ' : '↓ Achats : ') + val + ' €';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { font: { size: 10 }, color: '#AFA89F', maxRotation: 45 },
+            grid: { display: false }
+          },
+          y: {
+            ticks: {
+              font: { size: 10 },
+              color: '#AFA89F',
+              callback: v => Math.abs(v) + ' €'
+            },
+            grid: { color: v => v.tick.value === 0 ? '#C0B8B0' : '#F0EDE8', lineWidth: v => v.tick.value === 0 ? 2 : 1 }
+          }
+        }
+      },
+      plugins: [gainPlugin]
+    });
+  }
+
+  /* ---- Formulaire ---- */
+  function updatePriceLabel() {
+    const isVente = document.getElementById('f-type').value === 'vente';
+    document.getElementById('f-prix-label').textContent = isVente ? 'Prix de vente (€)' : "Prix d'achat (€)";
+    document.getElementById('fg-linked').style.display = isVente ? '' : 'none';
+    if (!isVente) { linkedId = null; document.getElementById('f-linked-nom').value = ''; document.getElementById('f-linked-info').textContent = ''; }
+  }
+
+  async function ajouter() {
+    const nom = document.getElementById('f-nom').value.trim();
+    const plat = document.getElementById('f-plat2').value.trim();
+    const prix = parseFloat(document.getElementById('f-prix').value);
+    if (!nom) { document.getElementById('msg').textContent = "Saisis un nom d'article."; return; }
+    if (!plat) { document.getElementById('msg').textContent = "Saisis une boutique."; return; }
+    if (!prix || prix <= 0) { document.getElementById('msg').textContent = "Saisis un prix valide."; return; }
+    const type = document.getElementById('f-type').value;
+    const item = {
+      id: Date.now(), type, nom,
+      plat: normPlat(plat),
+      cat: document.getElementById('f-cat').value,
+      pa: type === 'achat' ? prix : 0,
+      pv: type === 'vente' ? prix : 0,
+      date: document.getElementById('f-date').value || new Date().toISOString().slice(0,10),
+      linked_id: (type === 'vente' && linkedId) ? linkedId : null
+    };
+    data.push(item);
+    await sbAdd(item);
+    populateFilters(); refreshDash();
+    document.getElementById('f-nom').value = '';
+    document.getElementById('f-prix').value = '';
+    document.getElementById('f-plat2').value = '';
+    linkedId = null;
+    document.getElementById('f-linked-nom').value = '';
+    document.getElementById('f-linked-info').textContent = '';
+    document.getElementById('msg').textContent = 'Article ajouté !';
+    setTimeout(() => document.getElementById('msg').textContent = '', 2000);
+  }
+
+/* ---- Import CSV ---- */
+  function parseCSVLine(line, sep) {
+    const cols = []; let cur = ''; let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === sep && !inQ) { cols.push(cur.trim()); cur = ''; }
+      else { cur += c; }
+    }
+    cols.push(cur.trim());
+    return cols;
+  }
+
+  function importCSV() {
+    const file = document.getElementById('csv-file').files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const lines = e.target.result.split('\n').map(l => l.trim()).filter(Boolean);
+      const header = lines[0].replace(/^\uFEFF/, '').toLowerCase();
+      const isNotion = header.startsWith('date,') || header.includes(',article,');
+      let added = 0, skipped = 0, itemIdx = 0;
+      const baseId = Date.now();
+      const newItems = [];
+      const existing = new Set(data.map(a => a.nom + '|' + a.date + '|' + a.type));
+
+      lines.slice(1).forEach(line => {
+        let nom, type, date, prix, plat, cat;
+
+        if (isNotion) {
+          const cols = parseCSVLine(line, ',');
+          if (cols.length < 3) return;
+          const dateRaw = cols[0].trim();
+          nom = cols[1].trim().replace(/\s*\(\d+\)$/, ' (revente)');
+          const prixRaw = parseFloat((cols[2]||'').replace(/\u20AC/g,'').replace(/\s/g,'').replace(',','.').trim()) || 0;
+          plat = normPlat(cols[3] || '');
+          cat = (cols[4]||'').trim() || 'Autre';
+          type = prixRaw >= 0 ? 'vente' : 'achat';
+          prix = Math.abs(prixRaw);
+          if (dateRaw.includes('/')) {
+            const p = dateRaw.split('/');
+            date = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+          } else { date = dateRaw; }
+        } else {
+          const cols = line.split(';');
+          if (cols.length < 4) return;
+          nom = cols[0].replace(/^\uFEFF/, '').trim();
+          const typeRaw = (cols[1]||'').trim().toUpperCase();
+          type = typeRaw === 'VENTE' ? 'vente' : typeRaw === 'ACHAT' ? 'achat' : null;
+          if (!type) return;
+          const dateRaw = (cols[2]||'').trim();
+          if (dateRaw.includes('/')) {
+            const p = dateRaw.split('/');
+            date = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+          } else { date = dateRaw; }
+          prix = Math.abs(parseFloat((cols[3]||'').replace(/\u20AC/g,'').replace(/\s/g,'').replace(',','.').trim())) || 0;
+          plat = normPlat(cols[4] || '');
+          cat = (cols[5]||'').trim() || 'Autre';
+        }
+
+        if (!nom) return;
+        const key = nom + '|' + date + '|' + type;
+        if (existing.has(key)) { skipped++; return; }
+        existing.add(key);
+        const item = { id: baseId + (itemIdx++), type, nom, plat, cat, pa: type === 'achat' ? prix : 0, pv: type === 'vente' ? prix : 0, date };
+        data.push(item); newItems.push(item);
+        added++;
+      });
+
+      sbAddBatch(newItems).then(() => { populateFilters(); refreshDash(); });
+      const msg = document.getElementById('msg-import');
+      msg.textContent = `\u2713 ${added} article(s) import\u00E9(s)${skipped ? ', ' + skipped + ' doublon(s) ignor\u00E9(s)' : ''}.`;
+      setTimeout(() => msg.textContent = '', 5000);
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  /* ---- Historique
+
+  /* ---- Historique ---- */
+  async function del(id) {
+    if (!confirm('Supprimer cette transaction ?')) return;
+    data = data.filter(a => String(a.id) !== String(id));
+    await sbDelete(id);
+    populateFilters(); renderList(); refreshDash();
+  }
+
+  function renderList() {
+    const typeSel = document.getElementById('lf-type').value;
+    const platSel = document.getElementById('lf-plat').value;
+    const catSel = document.getElementById('lf-cat').value;
+    const search = document.getElementById('lf-search').value.toLowerCase().trim();
+    const lpf = getListPeriodFilter();
+    const fd = data.filter(a =>
+      (!typeSel || a.type === typeSel) &&
+      (!platSel || a.plat === platSel) &&
+      (!catSel || a.cat === catSel) &&
+      (!search || a.nom.toLowerCase().includes(search)) &&
+      lpf(a)
+    ).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+    const total = fd.length;
+    const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (currentPage > pages) currentPage = 1;
+    const slice = fd.slice((currentPage-1)*PAGE_SIZE, currentPage*PAGE_SIZE);
+    document.getElementById('pager-info').textContent = `Page ${currentPage} / ${pages}`;
+    const totalBen = fd.reduce((sum, a) => sum + (a.type === 'vente' ? a.pv : -a.pa), 0);
+    const benColor = totalBen >= 0 ? 'var(--almond-dark)' : 'var(--peach-dark)';
+    const benSign = totalBen >= 0 ? '+' : '-';
+    document.getElementById('list-count').innerHTML = `${total} article(s) &nbsp;·&nbsp; Bénéfice : <span style="font-weight:600;color:${benColor}">${benSign}${fmt(totalBen)}</span>`;
+    const tbody = document.getElementById('tbody');
+    if (!slice.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty">Aucun article</td></tr>'; return; }
+    tbody.innerHTML = slice.map(a => {
+      const prix = a.type === 'vente' ? a.pv : a.pa;
+      const ben = a.type === 'vente' ? a.pv : -a.pa;
+      const dateDisp = a.date ? a.date.split('-').reverse().join('/') : '';
+      let margeCell = '<td></td>';
+      if (a.type === 'vente' && a.linked_id) {
+        const linked = data.find(x => String(x.id) === String(a.linked_id));
+        if (linked) {
+          const m = a.pv - linked.pa;
+          margeCell = `<td style="color:${m>=0?'var(--almond-dark)':'var(--peach-dark)'};font-size:11px;font-weight:600;font-family:'DM Mono',monospace">${m>=0?'+':'-'}${fmt(m)}</td>`;
+        }
+      }
+      return `<tr>
+        <td><span class="pill pill-${a.type === 'vente' ? 'v' : 'a'}">${a.type}</span></td>
+        <td title="${a.nom}">${a.nom}</td>
+        <td style="color:var(--text-mid)" title="${a.plat}">${a.plat}</td>
+        <td style="font-size:11px;color:var(--text-light)">${a.cat||''}</td>
+        <td style="font-size:11px;color:var(--text-light);font-family:'DM Mono',monospace">${dateDisp}</td>
+        <td style="font-family:'DM Mono',monospace">${fmt(prix)}</td>
+        <td style="color:${ben>=0?'var(--almond-dark)':'var(--peach-dark)'};font-weight:600;font-family:'DM Mono',monospace">${ben>=0?'+':'-'}${fmt(ben)}</td>
+        ${margeCell}
+        <td><button class="edit-btn" onclick="openEdit('${a.id}')">✎</button><button class="del" onclick="del('${a.id}')">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function changePage(dir) { currentPage += dir; renderList(); }
+
+  function openEdit(id) {
+    const a = data.find(x => String(x.id) === String(id));
+    if (!a) return;
+    editId = String(id);
+    document.getElementById('e-type').value = a.type;
+    document.getElementById('e-nom').value = a.nom;
+    document.getElementById('e-plat').value = a.plat;
+    document.getElementById('e-cat').value = a.cat || 'Autre';
+    document.getElementById('e-prix').value = a.type === 'vente' ? a.pv : a.pa;
+    document.getElementById('e-date').value = a.date || '';
+    updateEditPriceLabel();
+    document.getElementById('modal-overlay').style.display = 'flex';
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').style.display = 'none';
+    document.getElementById('msg-edit').textContent = '';
+    editId = null;
+  }
+
+  function updateEditPriceLabel() {
+    document.getElementById('e-prix-label').textContent =
+      document.getElementById('e-type').value === 'vente' ? 'Prix de vente (€)' : "Prix d'achat (€)";
+  }
+
+  async function saveEdit() {
+    const nom = document.getElementById('e-nom').value.trim();
+    const plat = document.getElementById('e-plat').value.trim();
+    const prix = parseFloat(document.getElementById('e-prix').value);
+    if (!nom) { document.getElementById('msg-edit').textContent = "Saisis un nom d'article."; return; }
+    if (!plat) { document.getElementById('msg-edit').textContent = "Saisis une plateforme."; return; }
+    if (!prix || prix <= 0) { document.getElementById('msg-edit').textContent = "Saisis un prix valide."; return; }
+    const idx = data.findIndex(x => String(x.id) === editId);
+    if (idx === -1) return;
+    const type = document.getElementById('e-type').value;
+    data[idx] = { ...data[idx], type, nom, plat: normPlat(plat), cat: document.getElementById('e-cat').value, pa: type === 'achat' ? prix : 0, pv: type === 'vente' ? prix : 0, date: document.getElementById('e-date').value };
+    await sbPatch(editId, data[idx]);
+    populateFilters(); renderList(); refreshDash();
+    closeModal();
+  }
+
+  function nav(t) {
+    ['dash','add','list','link'].forEach(id => document.getElementById('v-'+id).style.display = id===t?'':'none');
+    document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', ['dash','add','list','link'][i]===t));
+    if (t==='dash') { populateFilters(); refreshDash(); }
+    if (t==='list') { populateFilters(); renderList(); }
+    if (t==='link') renderLink();
+  }
+
+  /* ---- Autocomplete boutique ---- */
+  function acFilter() {
+    const val = document.getElementById('f-plat2').value.toLowerCase().trim();
+    const plats = [...new Set(data.map(a => a.plat))].filter(Boolean).sort();
+    const matches = val ? plats.filter(p => p.toLowerCase().includes(val)) : plats;
+    const dd = document.getElementById('ac-drop');
+    let html = matches.map(p => `<div class="ac-item" onmousedown="acSelect('${p.replace(/'/g,"\\'")}')">${p}</div>`).join('');
+    if (val && !plats.some(p => p.toLowerCase() === val)) {
+      const norm = val.charAt(0).toUpperCase() + val.slice(1);
+      html += `<div class="ac-item ac-create" onmousedown="acSelect('${norm}')">+ Créer "${norm}"</div>`;
+    }
+    dd.innerHTML = html;
+    dd.style.display = html ? 'block' : 'none';
+  }
+  function acSelect(val) { document.getElementById('f-plat2').value = val; acHide(); }
+  function acHide() { document.getElementById('ac-drop').style.display = 'none'; }
+
+  /* ---- Autocomplete achat lié ---- */
+  function acAchatFilter() {
+    const val = document.getElementById('f-linked-nom').value.toLowerCase().trim();
+    const achats = data.filter(a => a.type === 'achat' && (!val || a.nom.toLowerCase().includes(val)));
+    const dd = document.getElementById('ac-achat-drop');
+    if (!achats.length) { dd.style.display = 'none'; return; }
+    dd.innerHTML = achats.slice(0, 10).map(a => {
+      const dateDisp = a.date ? a.date.split('-').reverse().join('/') : '';
+      const label = `${a.nom} — ${a.pa.toFixed(2).replace('.',',')} € (${dateDisp})`;
+      return `<div class="ac-item" onmousedown="acAchatSelect('${a.id}','${a.nom.replace(/'/g,"\\'")}',${a.pa})">${label}</div>`;
+    }).join('');
+    dd.style.display = 'block';
+  }
+  function acAchatSelect(id, nom, pa) {
+    linkedId = id;
+    document.getElementById('f-linked-nom').value = nom;
+    document.getElementById('f-linked-info').textContent = `Prix d'achat : ${parseFloat(pa).toFixed(2).replace('.',',')} €`;
+    acAchatHide();
+  }
+  function acAchatHide() { document.getElementById('ac-achat-drop').style.display = 'none'; }
+
+  /* ---- Onglet Associer ---- */
+  function computeMatches() {
+    const linkedAchatIds = new Set(data.filter(a => a.linked_id).map(a => String(a.linked_id)));
+    const freeAchats = data.filter(a => a.type === 'achat' && !linkedAchatIds.has(String(a.id)));
+    const unlinkedVentes = data.filter(a => a.type === 'vente' && !a.linked_id);
+
+    return unlinkedVentes.map(vente => {
+      if (skipSet.has(String(vente.id))) return { vente, achat: null, conf: 'none' };
+      const baseName = vente.nom.replace(/\s*\(revente\)\s*$/i, '').trim();
+      const venteWords = baseName.toLowerCase().split(/\s+/).filter(w => w.length >= 3);
+      let bestMatch = null, bestConf = 'none', bestScore = 0;
+
+      for (const achat of freeAchats) {
+        let score = 0, conf = 'none';
+        if (/\(revente\)/i.test(vente.nom) && achat.nom.toLowerCase() === baseName.toLowerCase()) {
+          score = 10; conf = 'haute';
+        } else if (achat.nom.toLowerCase() === vente.nom.toLowerCase()) {
+          score = 9; conf = 'haute';
+        } else {
+          const achatWords = achat.nom.toLowerCase().split(/\s+/).filter(w => w.length >= 3);
+          if (venteWords.length && achatWords.length) {
+            const common = venteWords.filter(w => achatWords.includes(w));
+            const ratio = common.length / Math.min(venteWords.length, achatWords.length);
+            if (ratio >= 0.5) { score = Math.round(ratio * 5); conf = 'partielle'; }
+          }
+        }
+        if (score > bestScore) { bestScore = score; bestConf = conf; bestMatch = achat; }
+        else if (score === bestScore && score > 0 && bestMatch) {
+          const ref = vente.date || '9999-12-31';
+          if (Math.abs(new Date(ref) - new Date(achat.date||'1970-01-01')) < Math.abs(new Date(ref) - new Date(bestMatch.date||'1970-01-01')))
+            bestMatch = achat;
+        }
+      }
+      return { vente, achat: bestMatch, conf: bestConf };
+    });
+  }
+
+  function renderLink() {
+    const filterSel = document.getElementById('lf-link-filter').value;
+    const matches = computeMatches();
+    const haute = matches.filter(m => m.conf === 'haute');
+    const partielle = matches.filter(m => m.conf === 'partielle');
+    const none = matches.filter(m => m.conf === 'none');
+    document.getElementById('link-counts').textContent =
+      `${haute.length} haute · ${partielle.length} partielle · ${none.length} sans correspondance`;
+    let toShow = filterSel === 'haute' ? haute : filterSel === 'partielle' ? partielle : filterSel === 'none' ? none : [...haute, ...partielle, ...none];
+    const container = document.getElementById('link-cards');
+    if (!toShow.length) {
+      container.innerHTML = '<div class="empty" style="padding:3rem;text-align:center;color:var(--text-light);font-size:13px">Aucune paire à afficher</div>';
+      return;
+    }
+    container.innerHTML = toShow.map(m => {
+      const v = m.vente, a = m.achat;
+      const vDate = v.date ? v.date.split('-').reverse().join('/') : '';
+      const confLabel = m.conf === 'haute' ? 'Haute confiance' : m.conf === 'partielle' ? 'Partielle' : 'Sans correspondance';
+      const achatSide = a
+        ? `<div class="link-side">
+            <div class="link-side-label">Achat correspondant</div>
+            <div class="link-nom">${a.nom}</div>
+            <div class="link-meta">${a.pa.toFixed(2).replace('.',',')} € · ${a.date ? a.date.split('-').reverse().join('/') : ''} · ${a.plat||''}</div>
+           </div>
+           <div class="link-actions">
+             <button class="btn primary" onclick="confirmLink('${v.id}','${a.id}')">Lier</button>
+             <button class="btn" onclick="skipLink('${v.id}')">Ignorer</button>
+           </div>`
+        : `<div class="link-side">
+            <div class="link-side-label">Aucune correspondance</div>
+            <div class="ac-wrap" style="margin-top:4px">
+              <input type="text" id="manual-${v.id}" placeholder="Chercher un achat..." autocomplete="off"
+                oninput="acManualFilter('${v.id}')" onfocus="acManualFilter('${v.id}')" onblur="setTimeout(()=>acManualHide('${v.id}'),200)"
+                style="font-size:12px;padding:6px 8px" />
+              <div id="ac-manual-${v.id}" class="ac-drop"></div>
+            </div>
+           </div>
+           <div class="link-actions">
+             <button class="btn" onclick="skipLink('${v.id}')">Ignorer</button>
+           </div>`;
+      return `<div class="link-card" id="lc-${v.id}">
+        <div class="link-side">
+          <span class="conf-badge conf-${m.conf}">${confLabel}</span>
+          <div class="link-side-label">Vente</div>
+          <div class="link-nom">${v.nom}</div>
+          <div class="link-meta">${v.pv.toFixed(2).replace('.',',')} € · ${vDate} · ${v.plat||''}</div>
+        </div>
+        <div class="link-arrow">${m.conf === 'none' ? '?' : '→'}</div>
+        ${achatSide}
+      </div>`;
+    }).join('');
+  }
+
+  async function confirmLink(venteId, achatId) {
+    const idx = data.findIndex(x => String(x.id) === String(venteId));
+    if (idx === -1) return;
+    data[idx].linked_id = achatId;
+    await sbPatch(venteId, { linked_id: achatId });
+    renderLink();
+  }
+
+  function skipLink(venteId) {
+    skipSet.add(String(venteId));
+    localStorage.setItem('skip_associations', JSON.stringify([...skipSet]));
+    renderLink();
+  }
+
+  function acManualFilter(venteId) {
+    const val = (document.getElementById('manual-' + venteId)?.value || '').toLowerCase().trim();
+    const linkedAchatIds = new Set(data.filter(a => a.linked_id).map(a => String(a.linked_id)));
+    const freeAchats = data.filter(a => a.type === 'achat' && !linkedAchatIds.has(String(a.id)) && (!val || a.nom.toLowerCase().includes(val)));
+    const dd = document.getElementById('ac-manual-' + venteId);
+    if (!dd) return;
+    if (!freeAchats.length) { dd.style.display = 'none'; return; }
+    dd.innerHTML = freeAchats.slice(0, 8).map(a => {
+      const d = a.date ? a.date.split('-').reverse().join('/') : '';
+      return `<div class="ac-item" onmousedown="confirmLink('${venteId}','${a.id}')">${a.nom} — ${a.pa.toFixed(2).replace('.',',')} € (${d})</div>`;
+    }).join('');
+    dd.style.display = 'block';
+  }
+
+  function acManualHide(venteId) {
+    const dd = document.getElementById('ac-manual-' + venteId);
+    if (dd) dd.style.display = 'none';
+  }
+
+  // Init
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-plat2').value = 'Vinted';
+  initResizableCols();
+  sbLoad();
+</script>
+</body>
+</html>
