@@ -360,7 +360,7 @@
         <th style="width:10%">Prix<span class="col-resizer"></span></th>
         <th style="width:10%">Bénéfice<span class="col-resizer"></span></th>
         <th style="width:10%">Marge<span class="col-resizer"></span></th>
-        <th style="width:7%"></th>
+        <th style="width:12%"></th>
       </tr></thead>
       <tbody id="tbody"></tbody>
     </table>
@@ -1008,8 +1008,8 @@
           margeCell = `<td style="color:${m>=0?'var(--almond-dark)':'var(--peach-dark)'};font-size:11px;font-weight:600;font-family:'DM Mono',monospace">${m>=0?'+':'-'}${fmt(m)}</td>`;
         }
       }
-      const linkBtn = a.type === 'vente' && !a.linked_id
-        ? `<button class="link-btn" onclick="openLink('${a.id}')" title="Lier à un achat">🔗</button>`
+      const linkBtn = a.type === 'vente'
+        ? `<button class="link-btn" onclick="openLink('${a.id}')" title="${a.linked_id ? 'Modifier le lien' : 'Lier à un achat'}">🔗</button>`
         : '';
       return `<tr>
         <td><span class="pill pill-${a.type === 'vente' ? 'v' : 'a'}">${a.type}</span></td>
@@ -1261,7 +1261,9 @@
 
   function acLinkFilter() {
     const val = document.getElementById('link-search').value.toLowerCase().trim();
-    const linkedAchatIds = new Set(data.filter(a => a.linked_id).map(a => String(a.linked_id)));
+    const currentVente = data.find(x => String(x.id) === linkVenteId);
+    const currentLinkedId = currentVente ? String(currentVente.linked_id || '') : '';
+    const linkedAchatIds = new Set(data.filter(a => a.linked_id && String(a.linked_id) !== currentLinkedId).map(a => String(a.linked_id)));
     const freeAchats = data
       .filter(a => a.type === 'achat' && !linkedAchatIds.has(String(a.id)) && (!val || a.nom.toLowerCase().includes(val)))
       .sort((a,b) => (b.date||'').localeCompare(a.date||''));
