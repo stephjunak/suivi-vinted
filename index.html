@@ -996,11 +996,15 @@
     document.getElementById('list-count').innerHTML = `${total} article(s) &nbsp;·&nbsp; Bénéfice : <span style="font-weight:600;color:${benColor}">${benSign}${fmt(totalBen)}</span>`;
     const tbody = document.getElementById('tbody');
     if (!slice.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty">Aucun article</td></tr>'; return; }
+    const linkedAchatIds = new Set(data.filter(x => x.linked_id).map(x => String(x.linked_id)));
     tbody.innerHTML = slice.map(a => {
       const prix = a.type === 'vente' ? a.pv : a.pa;
       const ben = a.type === 'vente' ? a.pv : -a.pa;
       const dateDisp = a.date ? a.date.split('-').reverse().join('/') : '';
       let margeCell = '<td></td>';
+      if (a.type === 'achat' && linkedAchatIds.has(String(a.id))) {
+        margeCell = `<td><span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--lavender-light);color:#6B5FA6">lié</span></td>`;
+      }
       if (a.type === 'vente' && a.linked_id) {
         const linked = data.find(x => String(x.id) === String(a.linked_id));
         if (linked) {
