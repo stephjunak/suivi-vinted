@@ -33,7 +33,7 @@
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-    .app { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+    .app { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
 
     /* Header */
     header { display: flex; align-items: center; gap: 12px; margin-bottom: 1.75rem; }
@@ -166,7 +166,6 @@
     <button class="tab active" onclick="nav('dash')">Synthèse</button>
     <button class="tab" onclick="nav('add')">Ajouter</button>
     <button class="tab" onclick="nav('list')">Historique</button>
-    <button class="tab" onclick="nav('link')">Associer</button>
   </div>
 
   <!-- RÉSUMÉ -->
@@ -374,18 +373,6 @@
 </div>
 
   <!-- ASSOCIER -->
-  <div id="v-link" style="display:none">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1rem;flex-wrap:wrap">
-      <select class="filter" id="lf-link-filter" onchange="renderLink()">
-        <option value="all">Toutes les paires</option>
-        <option value="haute">Haute confiance</option>
-        <option value="partielle">Correspondance partielle</option>
-        <option value="none">Sans correspondance</option>
-      </select>
-      <span id="link-counts" style="font-size:12px;color:var(--text-light)"></span>
-    </div>
-    <div id="link-cards"></div>
-  </div>
 </div>
 
 <!-- Modal liaison -->
@@ -883,6 +870,8 @@
     document.getElementById('f-linked-info').textContent = '';
     document.getElementById('msg').textContent = 'Article ajouté !';
     setTimeout(() => document.getElementById('msg').textContent = '', 2000);
+    document.getElementById('f-type').value = 'vente';
+    updatePriceLabel();
   }
 
 /* ---- Import CSV ---- */
@@ -1073,11 +1062,10 @@
   }
 
   function nav(t) {
-    ['dash','add','list','link'].forEach(id => document.getElementById('v-'+id).style.display = id===t?'':'none');
-    document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', ['dash','add','list','link'][i]===t));
+    ['dash','add','list'].forEach(id => document.getElementById('v-'+id).style.display = id===t?'':'none');
+    document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', ['dash','add','list'][i]===t));
     if (t==='dash') { populateFilters(); refreshDash(); }
     if (t==='list') { populateFilters(); renderList(); }
-    if (t==='link') renderLink();
   }
 
   /* ---- Autocomplete boutique ---- */
