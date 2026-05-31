@@ -4,6 +4,52 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mon Tracker Achats & Ventes</title>
+  <script>
+    (function(){
+      const c = document.createElement('canvas');
+      c.width = c.height = 180;
+      const ctx = c.getContext('2d');
+      const r = 36;
+      ctx.beginPath();
+      ctx.moveTo(r, 0); ctx.lineTo(180-r, 0);
+      ctx.arcTo(180, 0, 180, r, r);
+      ctx.lineTo(180, 180-r);
+      ctx.arcTo(180, 180, 180-r, 180, r);
+      ctx.lineTo(r, 180);
+      ctx.arcTo(0, 180, 0, 180-r, r);
+      ctx.lineTo(0, r);
+      ctx.arcTo(0, 0, r, 0, r);
+      ctx.closePath();
+      const grad = ctx.createLinearGradient(0, 0, 180, 180);
+      grad.addColorStop(0, '#EFA882');
+      grad.addColorStop(1, '#7DAF75');
+      ctx.fillStyle = grad;
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+      ctx.lineWidth = 6;
+      const cx = 90, cy = 82, w = 70, h = 52, rr = 8;
+      ctx.beginPath();
+      ctx.moveTo(cx-w/2+rr, cy-h/2);
+      ctx.lineTo(cx+w/2-rr, cy-h/2); ctx.arcTo(cx+w/2, cy-h/2, cx+w/2, cy-h/2+rr, rr);
+      ctx.lineTo(cx+w/2, cy+h/2-rr); ctx.arcTo(cx+w/2, cy+h/2, cx+w/2-rr, cy+h/2, rr);
+      ctx.lineTo(cx-w/2+rr, cy+h/2); ctx.arcTo(cx-w/2, cy+h/2, cx-w/2, cy+h/2-rr, rr);
+      ctx.lineTo(cx-w/2, cy-h/2+rr); ctx.arcTo(cx-w/2, cy-h/2, cx-w/2+rr, cy-h/2, rr);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx-w/2, cy); ctx.lineTo(cx+w/2, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx-18, cy-16); ctx.lineTo(cx+18, cy-16); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx-18, cy+16); ctx.lineTo(cx+10, cy+16); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.beginPath(); ctx.arc(cx+22, cy+20, 14, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#7DAF75';
+      ctx.font = 'bold 18px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('€', cx+22, cy+20);
+      const link = document.createElement('link');
+      link.rel = 'apple-touch-icon';
+      link.href = c.toDataURL('image/png');
+      document.head.appendChild(link);
+    })();
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
   <style>
